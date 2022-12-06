@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:responsii/model/base_network.dart';
+
+import '../model/data_source.dart';
+import '../model/matches_model.dart';
+import 'detail.dart';
+
 
 
 
@@ -15,45 +21,32 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          actions: <Widget>[
-            Image.asset('assets/logo.png'),
-          ],
-          title: Text("STORE"),
-          centerTitle: true,
-          backgroundColor: Colors.green
+          title: Text("Piala Dunia 2022"),
+          backgroundColor: Colors.blue
       ),
-      body: _buildDetailClothing(),
+      body: _buildHome(),
     );
   }
 
-  Widget _buildDetailClothing() {
+  Widget _buildHome() {
     return Container(
       child: FutureBuilder(
-        future: BaseNetwork.get(''),
-        builder: (BuildContext context,
-            AsyncSnapshot<dynamic> snapshot,) {
-          if (snapshot.hasError) {
-            print(snapshot);
-            return _buildErrorSection();
-          }
-          if (snapshot.hasData) {
-            ClothingDataModel clothingModel =
-            ClothingDataModel.fromJson(snapshot.data);
-            print(clothingModel);
-            return _buildSuccessSection(clothingModel);
-          }
-          return _buildLoadingSection();
-        },
-      ),
+        future: MatchesSource.instance.LoadMatches(),
+          builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+            if (snapshot.hasError) {
+              return _buildErrorSection();
+            }
+            if (snapshot.hasData) {
+              // MatchesModel1 matchesModel1 = MatchesModel1.fromJson(snapshot.data);
+              return _buildSuccessSection(snapshot.data);
+            }
+            return _buildLoadingSection();
+          }),
     );
   }
 
   Widget _buildErrorSection() {
     return Text("Error");
-  }
-
-  Widget _buildEmptySection() {
-    return Text("Empty");
   }
 
   Widget _buildLoadingSection() {
@@ -62,93 +55,88 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildSuccessSection(ClothingDataModel data) {
-    return GridView.builder(
-      itemCount: data.clothing?.length,
+  Widget _buildSuccessSection(List<dynamic> data) {
+    return ListView.builder(
+      itemCount: 48,
       itemBuilder: (BuildContext context, int index) {
-        final ClothingData? clothing = data.clothing?[index];
-        return Card(
-            child: InkWell(
-              onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => PageDetail(clothing: clothing,)
-                    )
-                );
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    width: MediaQuery.of(context).size.width,
-                    height: 250,
+      MatchesModel matchesModel = MatchesModel.fromJson(data[index]);
+      return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Detail(
+                  detail: matchesModel,
+                ),
+              ),
+            );
+          },
+        child: Container(
+          height: 100,
+          width: 200,
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), // if you need this
+              side: BorderSide(
+                color: Colors.black.withOpacity(0.1),
+                width: 3,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
                     decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.6),
-                              offset: Offset(0.0, 5.0),
-                              blurRadius: 10.0,
-                              spreadRadius: -6.0
-                          ),
-                        ],
-                        image: DecorationImage(
-                            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.35), BlendMode.multiply),
-                            image: NetworkImage("${data.clothing?[index].image}"),
-                            fit: BoxFit.cover
-                        )
-                    ),
-                    child: Stack(
-                      children: [
-                        Align(
-                          alignment: Alignment.center,
-                          child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Container(
-                                  height: 100,
-                                  width: 150,
-                                  padding: EdgeInsets.all(10),
-                                  margin: EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        "${data.clothing?[index].title}", style: TextStyle(color: Colors.white),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 5,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ]),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          spreadRadius: 3,
+                          blurRadius: 5,
+                          offset: Offset(0, 3), // changes position of shadow
                         ),
                       ],
                     ),
-                  )],
-              ),
-            )
-        );
-      },
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 5.0,
-        crossAxisSpacing: 5.0,
-      ),
-    );
-  }
+                    width: 70,
+                    height: 50,
+                    child: FittedBox(
+                        fit: BoxFit.fill,
+                        child: Image.network(
+                            'https://countryflagsapi.com/png/${matchesModel!.homeTeam!.name!}')
+                    )),
 
-  Widget _buildItemClothing(String value) {
-    return Text(value);
+                Text("${matchesModel!.homeTeam!.name!}"),
+                Text("${matchesModel!.homeTeam!.goals!} - ${matchesModel!.awayTeam!.goals!}"),
+                Text("${matchesModel!.awayTeam!.name!}"),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        spreadRadius: 3,
+                        blurRadius: 5,
+                        offset: Offset(0, 3), // changes position of shadow
+                      ),
+                    ],
+                  ),
+                  width: 70,
+                  height: 50,
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: Image.network(
+                        'https://countryflagsapi.com/png/${matchesModel!.awayTeam!.name!}'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      },
+      //
+    );
   }
 }
